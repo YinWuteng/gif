@@ -68,4 +68,10 @@ object GlobalUtil {
 
         return "code: $status,msg: $msg"
     }
+
+    /**
+     * 获取当前应用程序的版本号
+     */
+    val appVersionCode:Int
+    get() = GifFun.getContext().packageManager.getPackageInfo(appPackage,0).versionCode
 }

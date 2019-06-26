@@ -74,7 +74,7 @@ abstract class Request {
     /**
      * 组装网络请求后添加到HTTP发送队列，并监听响应回调
      */
-    fun <T : Response> inFlight(requstModel: Class<T>) {
+    fun <T : Response> inFlight(requestModel: Class<T>) {
         build()
         val requestBuild = okhttp3.Request.Builder()
         if (method() == GET && getParams() != null) {
@@ -105,8 +105,9 @@ abstract class Request {
                             ""
                         }
                         logVerbose(LoggingInterceptor.TAG, result)
+                        //转化为相应的实体bean
                         val gson = GsonBuilder().disableHtmlEscaping().create()
-                        val responseModel = gson.fromJson(result, requstModel)
+                        val responseModel = gson.fromJson(result, requestModel)
                         response.close()
                         notifyResponse(responseModel)
                     } else {

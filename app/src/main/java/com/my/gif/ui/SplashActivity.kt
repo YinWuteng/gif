@@ -65,6 +65,7 @@ class SplashActivity : BaseActivity() {
      */
     private fun startInitRequest(){
 
+
     }
 
     /**

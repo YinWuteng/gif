@@ -3,10 +3,8 @@ package com.my.gif.view
 import android.content.Context
 import android.util.AttributeSet
 import android.view.View
-import android.view.ViewGroup
 import android.widget.LinearLayout
 import kotlinx.android.synthetic.main.activity_login.view.*
-import java.util.jar.Attributes
 
 /**
  * author:ywt
@@ -35,7 +33,7 @@ class LoginLayout(context: Context, attributes: AttributeSet) : LinearLayout(con
                 if (keyboardShowed){
                     post {
                         loginBgWallLayout.visibility=View.VISIBLE
-                        val params=loginLayoutTop as LayoutParams
+                        val params=loginLayoutTop.layoutParams as LayoutParams
                         params.weight=6f
                         loginLayoutTop.requestLayout()
                     }

@@ -56,7 +56,7 @@ object ResponseHandler {
     /**
      * 当网络请求没有正常响应的时候，根据异常类型进行响应处理
      */
-    fun handleFailuer(e: Exception) {
+    fun handleFailure(e: Exception) {
 
         when (e) {
             is ConnectException -> showToastOnUiThread(GlobalUtil.getString(R.string.network_connect_error))
