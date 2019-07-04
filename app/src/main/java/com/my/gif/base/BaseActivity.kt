@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.widget.Toolbar
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewStub
@@ -17,17 +18,21 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ProgressBar
 import android.widget.TextView
-import android.widget.Toolbar
+import com.my.gif.R
 import com.my.gif.common.PermissionListener
 import com.my.gif.common.RequestLifecycle
+import com.my.gif.event.ForceToLoginEvent
 import com.my.gif.event.MessageEvent
+import com.my.gif.ui.LoginActivity
 import com.my.gif.util.ActivityCollector
 import com.my.gif.util.AndroidVersion
+import kotlinx.android.synthetic.main.view_stub_holder.*
 import org.greenrobot.eventbus.EventBus
 import org.greenrobot.eventbus.Subscribe
 import org.greenrobot.eventbus.ThreadMode
 import java.lang.Exception
 import java.lang.ref.WeakReference
+
 /**
  * author:ywt
  * time:2019/6/14 20:59
@@ -106,15 +111,15 @@ open class BaseActivity : AppCompatActivity(), RequestLifecycle {
     }
 
     protected open fun setupViews() {
-        //loading=findViewById(R.id.loading)
+        loading = findViewById(R.id.loading)
     }
 
     /**
      * 设置toolbar
      */
     protected open fun setupToolbar() {
-        //toolbar=findViewById(R.id.toolbar)
-        //setSupportActionBar(toolbar)
+        toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
         val actionBar = supportActionBar
         actionBar?.setDisplayHomeAsUpEnabled(true)
     }
@@ -198,12 +203,12 @@ open class BaseActivity : AppCompatActivity(), RequestLifecycle {
             loadErrorView?.visibility = View.VISIBLE
             return
         }
-//        val  viewStub=findViewById<ViewStub>(R.id.loadErrorView)
-//        if (viewStub!=null){
-//            loadErrorView=viewStub.inflate()
-//            val  loadErrortext=loadErrorView?.findViewById<TextView>(R.id.loadErrortext)
-//            loadErrortext?.text=tip
-//        }
+        val viewStub = findViewById<ViewStub>(R.id.loadErrorView)
+        if (viewStub != null) {
+            loadErrorView = viewStub.inflate()
+            val loadErrorText = loadErrorView?.findViewById<TextView>(R.id.loadErrorText)
+            loadErrorText?.text = tip
+        }
     }
 
     /**
@@ -216,12 +221,12 @@ open class BaseActivity : AppCompatActivity(), RequestLifecycle {
             return
         }
 
-        //val  viewStub=findViewById<ViewStub>(R.id.badNetWorkView)
-        // if(viewStub!=null){
-        //  badNetworkView =viewStub.inflate()
-        //  val badNetworkRootView=badNetworkView?.findViewById<View>(R.id.badNetworkRootView)
-        //  badNetworkRootView?.setOnClickListener(listener)
-        // }
+        val viewStub = findViewById<ViewStub>(R.id.badNetworkView)
+        if (viewStub != null) {
+            badNetWorkView = viewStub.inflate()
+            val badNetworkRootView = badNetworkView?.findViewById<View>(R.id.badNetworkRootView)
+            badNetworkRootView?.setOnClickListener(listener)
+        }
     }
 
     /**
@@ -234,7 +239,12 @@ open class BaseActivity : AppCompatActivity(), RequestLifecycle {
             noContentView?.visibility = View.VISIBLE
             return
         }
-        // val  viewStub=findViewById<ViewStub>(R.id.noContentView)
+        val viewStub = findViewById<ViewStub>(R.id.noContentView)
+        if (viewStub != null) {
+            noContentView = viewStub.inflate()
+            val noContentText = noContentView?.findViewById<TextView>(R.id.noContentText)
+            noContentText?.text = tip
+        }
     }
 
     /**
@@ -288,6 +298,14 @@ open class BaseActivity : AppCompatActivity(), RequestLifecycle {
     @Subscribe(threadMode = ThreadMode.MAIN)
     open fun onMessageEvent(messageEvent: MessageEvent) {
 
+        if (messageEvent is ForceToLoginEvent) {
+            if (isActive) {
+                //判断Activity在前台，防止非前台的Activity也处理这个事件，
+                //造成打开多个LoginActivity
+                ActivityCollector.finishAll()
+                LoginActivity.actionStart(this, false, null)
+            }
+        }
     }
 
     /**
@@ -310,24 +328,24 @@ open class BaseActivity : AppCompatActivity(), RequestLifecycle {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        when(requestCode){
-            1-> if (grantResults.isNotEmpty()){
-                val deniedPermissions=ArrayList<String>()
-                for (i in grantResults.indices){
-                    val grantResult=grantResults[i]
-                    val  permission=permissions[i]
-                    if (grantResult!=PackageManager.PERMISSION_GRANTED){
+        when (requestCode) {
+            1 -> if (grantResults.isNotEmpty()) {
+                val deniedPermissions = ArrayList<String>()
+                for (i in grantResults.indices) {
+                    val grantResult = grantResults[i]
+                    val permission = permissions[i]
+                    if (grantResult != PackageManager.PERMISSION_GRANTED) {
                         deniedPermissions.add(permission)
                     }
                 }
 
-                if (deniedPermissions.isEmpty()){
+                if (deniedPermissions.isEmpty()) {
                     mListener!!.onGranted()
-                }else{
+                } else {
                     mListener!!.onDenied(deniedPermissions)
                 }
             }
-            else->{
+            else -> {
 
             }
         }
@@ -335,21 +353,21 @@ open class BaseActivity : AppCompatActivity(), RequestLifecycle {
     }
 
     override fun startLoading() {
-        loading?.visibility=View.VISIBLE
+        loading?.visibility = View.VISIBLE
         hideBadNetworkView()
         hideNoContentView()
         hideLoadErrorView()
     }
 
     override fun loadFinished() {
-        loading?.visibility=View.GONE
+        loading?.visibility = View.GONE
     }
 
     override fun loadFailed(msg: String?) {
-        loading?.visibility=View.GONE
+        loading?.visibility = View.GONE
     }
 
-    companion object{
-        private const val TAG="BaseActivity"
+    companion object {
+        private const val TAG = "BaseActivity"
     }
 }

@@ -9,7 +9,7 @@ import com.my.network.Response
  */
 interface Callback {
 
-    fun onResonse(response: Response)
+    fun onResponse(response: Response)
     
-    fun onFailed(e: Exception)
+    fun onFailure(e: Exception)
 }

@@ -17,12 +17,12 @@ class LoginLayout(context: Context, attributes: AttributeSet) : LinearLayout(con
     override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
         super.onLayout(changed, l, t, r, b)
         if (changed) {
-            val width = right - left
-            val height = bottom - top
+            val width = r - l
+            val height = b - t
             if (height.toFloat() / width.toFloat() < 4f / 3f) {//如果高宽比小于4:3，说明此时键盘弹出
 
                 post {
-                    loginBgWallLayout.visibility=View.VISIBLE
+                    loginBgWallLayout.visibility=View.INVISIBLE //登录背景隐藏
                     val params=loginLayoutTop.layoutParams as LayoutParams
                     params.weight=1.5f
                     keyboardShowed=true

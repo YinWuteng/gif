@@ -1,24 +1,19 @@
 package com.my.gif.ui
 
 import android.app.Activity
-import android.app.ActivityOptions
 import android.content.Intent
 import android.os.Bundle
 import android.os.CountDownTimer
 import android.support.transition.Fade
 import android.support.transition.TransitionManager
-import android.transition.Transition
 import android.view.View
-import com.my.core.GifFun
 import com.my.core.GlobalUtil
 import com.my.core.extension.logWarn
 import com.my.core.extension.showToast
+import com.my.core.model.TextUtils
 import com.my.core.model.Version
 import com.my.gif.MainActivity
 import com.my.gif.R
-import com.my.gif.common.SimpleTransitionListener
-import com.my.gif.event.FinishActivityEvent
-import com.my.gif.event.MessageEvent
 import com.my.gif.util.AndroidVersion
 import com.my.gif.util.ResponseHandler
 import com.my.network.Response
@@ -26,9 +21,6 @@ import com.my.network.model.FetchVCode
 import com.my.network.model.PhoneLogin
 import com.my.network.request.Callback
 import kotlinx.android.synthetic.main.activity_login.*
-import org.greenrobot.eventbus.EventBus
-import org.greenrobot.eventbus.Subscribe
-import org.greenrobot.eventbus.ThreadMode
 import java.util.regex.Pattern
 
 /**
@@ -36,7 +28,8 @@ import java.util.regex.Pattern
  * time:2019/6/17  21:10
  * desc:登录
  */
-class LoginActivity : AuthActivity() {
+class LoginActivity : AuthActivity(), View.OnClickListener {
+
 
     /**
      * 倒计时控件
@@ -53,84 +46,53 @@ class LoginActivity : AuthActivity() {
 
     override fun setupViews() {
         super.setupViews()
-        val isStartWithTransition = intent.getBooleanExtra(START_WITH_TRANSITION, false);
-
-        //api>21且开启动画时
-        if (AndroidVersion.hasLollipop() && isStartWithTransition) {
-            isTransitioning = true
-            window.sharedElementEnterTransition.addListener(object : SimpleTransitionListener() {
-                override fun onTransitionEnd(transition: Transition?) {
-                    val event = FinishActivityEvent()
-                    event.activityClass = LoginActivity::class.java
-                    EventBus.getDefault().post(event)
-                    isTransitioning = false
-                    fadeElementsIn()
-                }
-            })
-        } else {
-            loginLayoutBottom.visibility = View.VISIBLE
-            loginBgWallLayout.visibility = View.VISIBLE
-        }
+        loginLayoutBottom.visibility = View.VISIBLE
+        loginBgWallLayout.visibility = View.VISIBLE
         timer = SMSTimer(60 * 1000, 1000)
-        getVerifyCode.setOnClickListener {
+        getVerifyCode.setOnClickListener(this)
+        loginButton.setOnClickListener(this)
+    }
 
-            val number = phoneNumberEdit.text.toString()
-            if (number.isEmpty()) {
-                showToast(GlobalUtil.getString(R.string.phone_number_is_empty))
-                return@setOnClickListener
-            }
-            val pattern = "^1\\d{10}\$"
-            if (!Pattern.matches(pattern, number)) {
-                showToast(GlobalUtil.getString(R.string.phone_number_is_invalid))
-                return@setOnClickListener
-            }
-            getVerifyCode.isClickable = false
-
-            FetchVCode.getResponse(number, object : Callback {
-                override fun onResonse(response: Response) {
-                    if (response.status == 0) {
-                        timer.start()
-                        verifyCodeEdit.requestFocus()
-                    } else {
-                        showToast(response.msg)
-                        getVerifyCode.isCursorVisible = true
-                    }
-                }
-
-                override fun onFailed(e: Exception) {
-                    logWarn(TAG, e.message, e)
-                    ResponseHandler.handleFailure(e)
-                    getVerifyCode.isClickable = true
-                }
-            })
-        }
-
-        loginButton.setOnClickListener {
-            if (isLogin) return@setOnClickListener
-            val number = phoneNumberEdit.text.toString()
-            val code = verifyCodeEdit.text.toString()
-            if (number.isEmpty() || code.isEmpty()) {
-                showToast(GlobalUtil.getString(R.string.phone_number_or_code_is_empty))
-                return@setOnClickListener
-            }
-            val pattern = "^1\\d{10}\$"
-            if (!Pattern.matches(pattern, number)) {
-                showToast(GlobalUtil.getString(R.string.phone_number_is_invalid))
-                return@setOnClickListener
-            }
-            processLogin(number, code)
+    override fun onClick(v: View?) {
+        when (v?.id) {
+            R.id.getVerifyCode -> getVerifyCode()//获取验证码
+            R.id.loginButton -> login() //登录
         }
     }
 
     /**
-     * 是否在进行transition动画
+     * 获取短信验证码
      */
-    private var isTransitioning = false
-
-    override fun onBackPressed() {
-        if (!isTransitioning) {
-            finish()
+    private fun getVerifyCode() {
+        val number = phoneNumberEdit.text.toString()
+        if (number.isEmpty()) {
+            showToast(GlobalUtil.getString(R.string.phone_number_is_empty))
+            return
         }
+        if (!TextUtils.isPhone(number)) {
+            showToast(GlobalUtil.getString(R.string.phone_number_is_invalid))
+            return
+        }
+        getVerifyCode.isClickable = false
+
+        FetchVCode.getResponse(number, object : Callback {
+            override fun onResponse(response: Response) {
+                if (response.status == 0) {
+                    timer.start()
+                    verifyCodeEdit.requestFocus()
+                } else {
+                    showToast(response.msg)
+                    getVerifyCode.isClickable = true
+                }
+            }
+
+            override fun onFailure(e: Exception) {
+                logWarn(TAG, e.message, e)
+                ResponseHandler.handleFailure(e)
+                getVerifyCode.isClickable = true
+            }
+        })
+
     }
 
     override fun forwardToMainactivity() {
@@ -139,18 +101,27 @@ class LoginActivity : AuthActivity() {
         finish()
     }
 
-    @Subscribe(threadMode = ThreadMode.MAIN)
-    override fun onMessageEvent(messageEvent: MessageEvent) {
-        if (messageEvent is FinishActivityEvent && LoginActivity::class.java == messageEvent.activityClass) {
-            finish()
+    private fun login() {
+        if (isLogin) return
+        val number = phoneNumberEdit.text.toString()
+        val code = verifyCodeEdit.text.toString()
+        if (number.isEmpty() || code.isEmpty()) {
+            showToast(GlobalUtil.getString(R.string.phone_number_or_code_is_empty))
+            return
         }
+        val pattern = "^1\\d{10}\$"
+        if (!Pattern.matches(pattern, number)) {
+            showToast(GlobalUtil.getString(R.string.phone_number_is_invalid))
+            return
+        }
+        processLogin(number, code)
     }
 
     private fun processLogin(number: String, code: String) {
         hideSoftKeyboard()
         loginInProcess(true)
         PhoneLogin.getResponse(number, code, object : Callback {
-            override fun onResonse(response: Response) {
+            override fun onResponse(response: Response) {
                 if (!ResponseHandler.handleResponse(response)) {
                     val thirdPartyLogin = response as PhoneLogin
                     val status = thirdPartyLogin.status
@@ -182,7 +153,7 @@ class LoginActivity : AuthActivity() {
                 }
             }
 
-            override fun onFailed(e: Exception) {
+            override fun onFailure(e: Exception) {
 
                 logWarn(TAG, e.message, e)
                 ResponseHandler.handleFailure(e)
@@ -214,16 +185,10 @@ class LoginActivity : AuthActivity() {
         }
     }
 
-    /**
-     * 将LoginActivity的界面元素使用淡入的方式显示出来
-     */
-    private fun fadeElementsIn() {
-        TransitionManager.beginDelayedTransition(loginLayoutBottom, Fade())
-        loginLayoutBottom.visibility = View.VISIBLE
-        TransitionManager.beginDelayedTransition(loginBgWallLayout, Fade())
-        loginBgWallLayout.visibility = View.VISIBLE
-    }
 
+    /**
+     * 倒计时按钮
+     */
     inner class SMSTimer(millisInFuture: Long, countDownInterval: Long) :
         CountDownTimer(millisInFuture, countDownInterval) {
         /**
@@ -239,8 +204,7 @@ class LoginActivity : AuthActivity() {
          */
         override fun onTick(millisUntilFinished: Long) {
             getVerifyCode.text = String.format(
-                GlobalUtil.getString(R.string.sms_is_sent)
-                , millisUntilFinished / 1000
+                GlobalUtil.getString(R.string.sms_is_sent), millisUntilFinished / 1000
             )
         }
 
@@ -250,8 +214,6 @@ class LoginActivity : AuthActivity() {
     companion object {
         private const val TAG = "LoginActivity"
 
-        @JvmStatic
-        val START_WITH_TRANSITION = "start_with_transition"
 
         @JvmStatic
         val INTENT_HAS_NEW_VERSION = "intent_has_new_version"
@@ -259,9 +221,8 @@ class LoginActivity : AuthActivity() {
         @JvmStatic
         val INTENT_VERSION = "intent_version"
 
-        private val ACTION_LOGIN = "${GifFun.getPackageName()}.ACTION_LOGIN"
+        private const val ACTION_LOGIN = "com.my.gif.ui.ACTION_LOGIN"
 
-        private val ACTION_LOGIN_WITH_TRANSITION = "${GifFun.getPackageName()}.ACTION_LOGIN_WITH_TRANSITION"
 
         /**
          * 启动LoginActivity
@@ -276,26 +237,5 @@ class LoginActivity : AuthActivity() {
             activity.startActivity(intent)
         }
 
-        /**
-         * 启动LoginActivity，并附带transition动画
-         * @param activity 原activity实例
-         * @param logo 要执行transition动画的控件
-         */
-        fun actionStartWithTransition(activity: Activity, logo: View, hasNewVersion: Boolean, version: Version?) {
-            val intent = Intent(ACTION_LOGIN_WITH_TRANSITION).apply {
-                putExtra(INTENT_HAS_NEW_VERSION, hasNewVersion)
-                putExtra(INTENT_VERSION, version)
-            }
-            if (AndroidVersion.hasLollipop()) {
-                intent.putExtra(START_WITH_TRANSITION, true)
-                val options = ActivityOptions.makeSceneTransitionAnimation(
-                    activity, logo, activity.getString(R.string.transition_logo_splash)
-                )
-                activity.startActivity(intent, options.toBundle())
-            } else {
-                activity.startActivity(intent)
-                activity.finish()
-            }
-        }
     }
 }

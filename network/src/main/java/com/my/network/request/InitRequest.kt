@@ -26,7 +26,7 @@ class InitRequest : Request() {
         return URL
     }
 
-    override fun listen(callback: Callback) {
+    override fun listen(callback: Callback?) {
         setListener(callback)
         inFlight(Init::class.java)
     }

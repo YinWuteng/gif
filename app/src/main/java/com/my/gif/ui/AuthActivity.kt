@@ -6,7 +6,6 @@ import com.my.core.GlobalUtil
 import com.my.core.SharedUtil
 import com.my.core.extension.logWarn
 import com.my.core.extension.showToast
-import com.my.core.extension.showToastOnUiThread
 import com.my.gif.R
 import com.my.gif.base.BaseActivity
 import com.my.gif.util.ResponseHandler
@@ -53,7 +52,7 @@ abstract class AuthActivity : BaseActivity() {
      */
     protected fun getUserBaseInfo() {
         GetBaseInfo.getResponse(object : Callback {
-            override fun onResonse(response: Response) {
+            override fun onResponse(response: Response) {
                 if (activity == null) return
                 if (!ResponseHandler.handleResponse(response)) {//如果结果没有被处理
                     val baseInfo = response as GetBaseInfo
@@ -85,7 +84,7 @@ abstract class AuthActivity : BaseActivity() {
                 }
             }
 
-            override fun onFailed(e: Exception) {
+            override fun onFailure(e: Exception) {
                 logWarn(TAG,e.message,e)
                 showToast(GlobalUtil.getString(R.string.get_baseinfo_failed))
                 GifFun.logout()

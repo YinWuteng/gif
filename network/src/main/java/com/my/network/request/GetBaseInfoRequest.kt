@@ -22,7 +22,7 @@ class GetBaseInfoRequest : Request() {
         return URL
     }
 
-    override fun listen(callback: Callback) {
+    override fun listen(callback: Callback?) {
         setListener(callback)
         inFlight(GetBaseInfo::class.java)
     }

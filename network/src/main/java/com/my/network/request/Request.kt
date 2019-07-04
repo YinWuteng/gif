@@ -4,6 +4,7 @@ import com.google.gson.GsonBuilder
 import com.my.core.GifFun
 import com.my.core.extension.logVerbose
 import com.my.network.Response
+
 import com.my.network.exception.ResponseCodeException
 import com.my.network.model.OriginThreadCallback
 import com.my.network.util.AuthUtil
@@ -25,7 +26,7 @@ import java.util.concurrent.TimeUnit
 abstract class Request {
     private lateinit var okHttpClient: OkHttpClient
 
-    private val okhttpBuilder: OkHttpClient.Builder = OkHttpClient.Builder().addNetworkInterceptor(LoggingInterceptor())
+    private val okHttpBuilder: OkHttpClient.Builder = OkHttpClient.Builder().addNetworkInterceptor(LoggingInterceptor())
 
     private var callback: Callback? = null
 
@@ -41,61 +42,58 @@ abstract class Request {
         connectTimeout(10)
         writeTimeout(10)
         readTimeout(10)
-        deviceName = Utility.devideName
+        deviceName = Utility.deviceName
         deviceSerial = Utility.getDeviceSerial()
-
     }
 
-    fun build() {
-        okHttpClient = okhttpBuilder.build()
-
+    private fun build() {
+        okHttpClient = okHttpBuilder.build()
     }
 
     fun connectTimeout(seconds: Int) {
-        okhttpBuilder.connectTimeout(seconds.toLong(), TimeUnit.SECONDS)
+        okHttpBuilder.connectTimeout(seconds.toLong(), TimeUnit.SECONDS)
     }
 
     fun writeTimeout(seconds: Int) {
-        okhttpBuilder.writeTimeout(seconds.toLong(), TimeUnit.SECONDS)
+        okHttpBuilder.writeTimeout(seconds.toLong(), TimeUnit.SECONDS)
     }
 
     fun readTimeout(seconds: Int) {
-        okhttpBuilder.readTimeout(seconds.toLong(), TimeUnit.SECONDS)
+        okHttpBuilder.readTimeout(seconds.toLong(), TimeUnit.SECONDS)
     }
 
     /**
      * 设置响应回调接口
-     * @param callback 回调的接口实例
+     * @param callback
+     * 回调的实例
      */
-    fun setListener(callback: Callback) {
+    fun setListener(callback: Callback?) {
         this.callback = callback
     }
 
     /**
-     * 组装网络请求后添加到HTTP发送队列，并监听响应回调
+     * 组装网络请求后添加到HTTP发送队列，并监听响应回调。
+     * @param requestModel
+     * 网络请求对应的实体类
      */
     fun <T : Response> inFlight(requestModel: Class<T>) {
         build()
-        val requestBuild = okhttp3.Request.Builder()
+        val requestBuilder = okhttp3.Request.Builder()
         if (method() == GET && getParams() != null) {
-            requestBuild.url(urlWithParams())
+            requestBuilder.url(urlWithParam())
         } else {
-            requestBuild.url(url())
+            requestBuilder.url(url())
         }
-        requestBuild.headers(headers(Headers.Builder()).build())
+        requestBuilder.headers(headers(Headers.Builder()).build())
         when {
-            method() == POST -> requestBuild.post(formBody())
-            method() == PUT -> requestBuild.put(formBody())
-            method() == DELETE -> requestBuild.delete(formBody())
+            method() == POST -> requestBuilder.post(formBody())
+            method() == PUT -> requestBuilder.put(formBody())
+            method() == DELETE -> requestBuilder.delete(formBody())
         }
-        okHttpClient.newCall(requestBuild.build()).enqueue(object : okhttp3.Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                notifyFailure(e)
-            }
+        okHttpClient.newCall(requestBuilder.build()).enqueue(object : okhttp3.Callback {
 
             @Throws(IOException::class)
             override fun onResponse(call: Call, response: okhttp3.Response) {
-
                 try {
                     if (response.isSuccessful) {
                         val body = response.body()
@@ -105,7 +103,6 @@ abstract class Request {
                             ""
                         }
                         logVerbose(LoggingInterceptor.TAG, result)
-                        //转化为相应的实体bean
                         val gson = GsonBuilder().disableHtmlEscaping().create()
                         val responseModel = gson.fromJson(result, requestModel)
                         response.close()
@@ -116,20 +113,27 @@ abstract class Request {
                 } catch (e: Exception) {
                     notifyFailure(e)
                 }
+
+            }
+
+            override fun onFailure(call: Call, e: IOException) {
+                notifyFailure(e)
             }
 
         })
     }
 
-    abstract fun method(): Int
     abstract fun url(): String
-    abstract fun listen(callback: Callback)
+
+    abstract fun method(): Int
+
+    abstract fun listen(callback: Callback?)
 
     /**
-     * 构建和服务器身份认证相关的请求参数
+     * 构建和服务器身份认证相关的请求参数。
      * @param params
-     * 构建参数的params对象
-     * @return 如果完成了身份认证参数构建，返回true，否则返回false
+     * 构建参数的param对象
+     * @return 如果完成了身份认证参数构建返回true，否则返回false。
      */
     fun buildAuthParams(params: MutableMap<String, String>?): Boolean {
         if (params != null && AuthUtil.isLogin) {
@@ -144,11 +148,11 @@ abstract class Request {
     }
 
     /**
-     * 根据传入的key值构建用于服务器验证的参数，并添加到请求头当中
+     * 根据传入的keys构建用于进行服务器验证的参数，并添加到请求头当中。
      * @param builder
      * 请求头builder
      * @param keys
-     * 用于进行服务器验证的键
+     * 用于进行服务器验证的键。
      */
     fun buildAuthHeaders(builder: Headers.Builder?, vararg keys: String) {
         if (builder != null && keys.isNotEmpty()) {
@@ -167,14 +171,16 @@ abstract class Request {
     }
 
     /**
-     * 获取本次请求所携带的所有参数
+     * Android客户端的所有请求都需要添加User-Agent: GifFun Android这样一个请求头。每个接口的封装子类可以添加自己的请求头。
+     * @param builder
+     * 请求头builder
+     * @return 添加完请求头后的builder。
      */
-    private fun getParams(): Map<String, String>? {
-        if (!getParamsAlready) {
-            params = params()
-            getParamsAlready = true
-        }
-        return params
+    open fun headers(builder: Headers.Builder): Headers.Builder {
+        builder.add(NetworkConst.HEADER_USER_AGENT, NetworkConst.HEADER_USER_AGENT_VALUE)
+        builder.add(NetworkConst.HEADER_APP_VERSION, Utility.appVersion)
+        builder.add(NetworkConst.HEADER_APP_SIGN, Utility.appSign)
+        return builder
     }
 
     open fun params(): Map<String, String>? {
@@ -182,54 +188,17 @@ abstract class Request {
     }
 
     /**
-     * 当GET请求携带参数的时候，将参数以key=value的形式拼接到GET请求URL
-     * 后面，并且中间以?符号隔开
-     * @return 携带参数额URL请求地址
-     */
-    private fun urlWithParams(): String {
-        val params = getParams()
-        if (params != null) {
-            val keys = params.keys
-            if (!keys.isEmpty()) {
-                val paramsBuild = StringBuffer()
-                var needAnd = false
-                for (key in keys) {
-                    if (needAnd) {
-                        paramsBuild.append("&")
-                    }
-                    paramsBuild.append(key).append("=").append(params[key])
-                    needAnd = true
-                }
-                return url() + "?" + paramsBuild.toString()
-            }
-        }
-        return url()
-    }
-
-    /**
-     * Android客户端的所有请求都需要添加User-Agent: GifFun Android这样一个请求
-     * 每个接口的封装子类可以添加自己的请求头
-     * @param builder
-     * 请求头builder
-     * @return 添加完请求头后的builder
-     */
-    open fun headers(builder: Headers.Builder): Headers.Builder {
-        builder.add(NetworkConst.HEADER_USER_AGENT, NetworkConst.HEADER_USER_AGENT_VALUE)
-        builder.add(NetworkConst.HEADER_APP_VERSION, Utility.appVserion)
-        builder.add(NetworkConst.HEADER_APP_SIGN, Utility.appSign)
-        return builder
-    }
-
-    /**
-     * 构建POST,PUT,DELETE请求的参数体
+     * 构建POST、PUT、DELETE请求的参数体。
+     *
+     * @return 组装参数后的FormBody。
      */
     private fun formBody(): FormBody {
         val builder = FormBody.Builder()
         val params = getParams()
         if (params != null) {
-            val kes = params.keys
-            if (!kes.isEmpty()) {
-                for (key in kes) {
+            val keys = params.keys
+            if (!keys.isEmpty()) {
+                for (key in keys) {
                     val value = params[key]
                     if (value != null) {
                         builder.add(key, value)
@@ -241,16 +210,55 @@ abstract class Request {
     }
 
     /**
-     * 当请求响应成功的时候，将服务器响应转换后的实体进行回调
+     * 当GET请求携带参数的时候，将参数以key=value的形式拼装到GET请求URL的后面，并且中间以?符号隔开。
+     * @return 携带参数的URL请求地址。
+     */
+    private fun urlWithParam(): String {
+        val params = getParams()
+        if (params != null) {
+            val keys = params.keys
+            if (!keys.isEmpty()) {
+                val paramsBuilder = StringBuilder()
+                var needAnd = false
+                for (key in keys) {
+                    if (needAnd) {
+                        paramsBuilder.append("&")
+                    }
+                    paramsBuilder.append(key).append("=").append(params[key])
+                    needAnd = true
+                }
+                return url() + "?" + paramsBuilder.toString()
+            }
+        }
+        return url()
+    }
+
+    /**
+     * 获取本次请求所携带的所有参数。
+     *
+     * @return 本次请求所携带的所有参数，以Map形式返回。
+     */
+    private fun getParams(): Map<String, String>? {
+        if (!getParamsAlready) {
+            params = params()
+            getParamsAlready = true
+        }
+        return params
+    }
+
+    /**
+     * 当请求响应成功的时候，将服务器响应转换后的实体类进行回调。
+     * @param response
+     * 服务器响应转换后的实体类
      */
     private fun notifyResponse(response: Response) {
         callback?.let {
             if (it is OriginThreadCallback) {
-                it.onResonse(response)
+                it.onResponse(response)
                 callback = null
             } else {
                 GifFun.getHandler().post {
-                    it.onResonse(response)
+                    it.onResponse(response)
                     callback = null
                 }
             }
@@ -258,17 +266,18 @@ abstract class Request {
     }
 
     /**
-     * 当请求响应失败的时候，将具体的异常进行回调
+     * 当请求响应失败的时候，将具体的异常进行回调。
+     * @param e
+     * 请求响应的异常
      */
     private fun notifyFailure(e: Exception) {
-
         callback?.let {
             if (it is OriginThreadCallback) {
-                it.onFailed(e)
+                it.onFailure(e)
                 callback = null
             } else {
                 GifFun.getHandler().post {
-                    it.onFailed(e)
+                    it.onFailure(e)
                     callback = null
                 }
             }
@@ -276,9 +285,13 @@ abstract class Request {
     }
 
     companion object {
+
         const val GET = 0
+
         const val POST = 1
+
         const val PUT = 2
+
         const val DELETE = 3
     }
 }

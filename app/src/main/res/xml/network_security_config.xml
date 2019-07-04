@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--网络安全政策不允许，API>27的新项目工程需要配置-->
+<network-security-config >
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

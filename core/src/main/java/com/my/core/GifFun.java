@@ -6,7 +6,6 @@ import android.os.Handler;
 import android.os.Looper;
 import android.text.TextUtils;
 
-import java.util.logging.SocketHandler;
 
 /**
  * author:ywt

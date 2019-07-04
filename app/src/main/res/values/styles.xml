@@ -1,15 +1,35 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="AppTheme" parent="Theme.AppCompat.Light.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="android:textColor">@color/primary_text</item>
+        <item name="colorControlHighlight">@color/ripple_light_grey</item>
     </style>
     <style name="EditTextErrorAppearance" parent="@android:style/TextAppearance">
         <item name="android:textColor">@color/white_text</item>
         <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="AppTheme.SplashActivity">
+        <item name="android:windowBackground">@color/colorPrimary</item>
+    </style>
+    <style name="AppTheme.RegisterActivity">
+        <item name="colorAccent">@color/white</item>
+        <item name="android:textColor">@color/white_text</item>
+        <item name="android:textColorHint">@color/white_text</item>
+        <item name="colorControlNormal">@color/white_text</item>
+        <item name="colorControlHighlight">@color/white_text</item>
+    </style>
+    <style name="AppTheme.LoginActivity" parent="AppTheme.RegisterActivity"/>
+
+
+    <style name="MainActivityTabText" parent="TextAppearance.Design.Tab">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
     </style>
 
 </resources>
