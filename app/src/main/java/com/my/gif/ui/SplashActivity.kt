@@ -5,7 +5,6 @@ import android.view.View
 import com.my.core.GifFun
 import com.my.core.GlobalUtil
 import com.my.core.model.Version
-import com.my.gif.MainActivity
 import com.my.gif.R
 import com.my.gif.base.BaseActivity
 import kotlinx.android.synthetic.main.activity_splash.*

@@ -25,7 +25,9 @@
         <item name="colorControlHighlight">@color/white_text</item>
     </style>
     <style name="AppTheme.LoginActivity" parent="AppTheme.RegisterActivity"/>
+    <style name="AppTheme.MainActivity">
 
+    </style>
 
     <style name="MainActivityTabText" parent="TextAppearance.Design.Tab">
         <item name="android:textSize">14sp</item>

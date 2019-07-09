@@ -10,10 +10,11 @@ import android.view.View
 import com.my.core.GlobalUtil
 import com.my.core.extension.logWarn
 import com.my.core.extension.showToast
-import com.my.core.model.TextUtils
+import com.my.core.utils.TextUtils
 import com.my.core.model.Version
-import com.my.gif.MainActivity
 import com.my.gif.R
+import com.my.gif.event.FinishActivityEvent
+import com.my.gif.event.MessageEvent
 import com.my.gif.util.AndroidVersion
 import com.my.gif.util.ResponseHandler
 import com.my.network.Response
@@ -21,6 +22,8 @@ import com.my.network.model.FetchVCode
 import com.my.network.model.PhoneLogin
 import com.my.network.request.Callback
 import kotlinx.android.synthetic.main.activity_login.*
+import org.greenrobot.eventbus.Subscribe
+import org.greenrobot.eventbus.ThreadMode
 import java.util.regex.Pattern
 
 /**
@@ -210,7 +213,12 @@ class LoginActivity : AuthActivity(), View.OnClickListener {
 
     }
 
-
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    override fun onMessageEvent(messageEvent: MessageEvent) {
+      if (messageEvent is FinishActivityEvent && LoginActivity::class.java==messageEvent.activityClass){
+          finish()
+      }
+    }
     companion object {
         private const val TAG = "LoginActivity"
 

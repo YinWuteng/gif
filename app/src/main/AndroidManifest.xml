@@ -46,6 +46,9 @@
                   android:screenOrientation="portrait"
                   android:theme="@style/AppTheme.RegisterActivity"/>
 
+        <activity android:name=".ui.MainActivity"
+                  android:screenOrientation="portrait"
+                  android:theme="@style/AppTheme.MainActivity"/>
         <provider
                 android:authorities="com.my.gif.util.fileprovider"
                 android:name=".util.GifFunFileProvider"
